@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A browser-based job application tracker for replies, interviews and offers.">
+  <meta name="theme-color" content="#203c30">
+  <title>Job Tracker</title>
+  <link rel="stylesheet" href="./styles.css">
+  <script type="module" src="./app.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="top-inner">
+      <a class="brand" href="#overview"><span class="brand-icon" data-icon="briefcase"></span>Job Tracker</a>
+      <nav aria-label="Main navigation">
+        <a href="#overview" data-nav="overview" aria-current="page">Overview</a>
+        <a href="#applications" data-nav="applications">Applications</a>
+      </nav>
+      <button class="button primary" type="button" data-add><span data-icon="plus"></span>Add application</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="notice" id="demo-banner" hidden>
+      <span><strong>Demo data</strong> · You’re viewing fictional applications.</span>
+      <button type="button" class="button small" id="close-demo">Back to my applications</button>
+    </div>
+    <div class="notice error" id="load-error" hidden>
+      <span id="load-message"></span>
+      <button type="button" class="button small" id="retry">Retry</button>
+    </div>
+
+    <section id="overview" class="view" aria-labelledby="overview-title">
+      <div class="hero">
+        <div>
+          <h1 id="overview-title">Your job search</h1>
+          <p>See who replied, how far you got, and where things stand.</p>
+        </div>
+        <button type="button" class="button hero-button" id="demo"><span data-icon="chart"></span>View demo</button>
+      </div>
+
+      <div class="stats" id="stats" aria-label="Application totals" aria-live="polite"></div>
+
+      <div class="charts">
+        <section class="panel" aria-labelledby="pipeline-heading">
+          <header class="panel-header">
+            <div><h2 id="pipeline-heading">Hiring stages</h2><p>How many applications reached each stage</p></div>
+            <span class="panel-icon" data-icon="chart"></span>
+          </header>
+          <div class="funnel" id="funnel"></div>
+        </section>
+        <section class="panel" aria-labelledby="status-heading">
+          <header class="panel-header">
+            <div><h2 id="status-heading">Current status</h2><p>Where each application stands today</p></div>
+            <span class="panel-icon" data-icon="pie"></span>
+          </header>
+          <div class="status-chart">
+            <div class="ring" id="ring" aria-hidden="true"><div><strong id="ring-total">0</strong><span>applications</span></div></div>
+            <ul class="legend" id="legend"></ul>
+          </div>
+          <p class="chart-note">“No reply” starts 28 days after applying. Automated receipts don’t count as replies.</p>
+        </section>
+      </div>
+
+      <section class="panel recent" aria-labelledby="recent-heading">
+        <header class="panel-header">
+          <div><h2 id="recent-heading">Recent applications</h2><p>Your five most recent submissions</p></div>
+          <a class="button small" href="#applications" id="view-all">View all <span data-icon="arrow-right"></span></a>
+        </header>
+        <div id="recent"></div>
+      </section>
+    </section>
+
+    <section id="applications" class="view" hidden aria-labelledby="applications-title">
+      <div class="page-heading">
+        <div><h1 id="applications-title">Applications</h1><p>Open an application to log a reply, interview invite, or outcome.</p></div>
+        <div class="file-actions">
+          <button class="button" type="button" id="import">Import JSON</button>
+          <input type="file" id="import-file" accept=".json,application/json" hidden>
+          <button class="button" type="button" id="backup">Backup JSON</button>
+          <button class="button" type="button" id="export"><span data-icon="download"></span>Export CSV</button>
+        </div>
+      </div>
+      <section class="panel log" aria-label="Application log">
+        <p class="storage-note">Applications are saved in this browser. Use Backup JSON to keep a copy or move them to another device.</p>
+        <p class="form-error import-error" id="import-error" role="alert" hidden></p>
+        <div class="filters">
+          <label class="search"><span data-icon="search"></span><input id="search" type="search" placeholder="Search company, role or source" aria-label="Search company, role or source"></label>
+          <label><span class="sr-only">Status</span><select id="status-filter"></select></label>
+          <label><span class="sr-only">Sort</span><select id="sort"><option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="company">Company A–Z</option></select></label>
+        </div>
+        <div class="results" id="results" aria-live="polite"></div>
+        <div id="application-list"></div>
+      </section>
+    </section>
+  </main>
+
+  <dialog id="editor" aria-labelledby="editor-title">
+    <form id="application-form">
+      <header class="dialog-header">
+        <div><h2 id="editor-title">Add application</h2><p id="editor-subtitle">Enter the company, role, and date you applied.</p></div>
+        <button type="button" class="icon-button" id="close-editor" aria-label="Close application"><span data-icon="x"></span></button>
+      </header>
+      <div class="form-body">
+        <div class="form-grid">
+          <label>Company <input name="company" maxlength="120" required placeholder="e.g. John Holland"></label>
+          <label>Role <input name="role" maxlength="160" required placeholder="e.g. Site Engineer Intern"></label>
+          <label>Date applied <input type="date" name="applied" required></label>
+          <label>Outcome <select name="outcome"></select></label>
+        </div>
+        <details id="milestones">
+          <summary>Replies, interviews and offers</summary>
+          <p class="field-help">Use the date you received each invite. Record the first meaningful reply and skip automated receipts.</p>
+          <div class="form-grid milestones-grid" id="date-fields"></div>
+        </details>
+        <details id="extra">
+          <summary>Job link, résumé and notes</summary>
+          <div class="form-grid details-grid">
+            <label>Source <input name="source" maxlength="120" placeholder="e.g. SEEK, LinkedIn, referral"></label>
+            <label>Résumé version <input name="resume" maxlength="160" placeholder="e.g. Civil internship v2"></label>
+            <label class="full-width">Job ad link <input name="link" type="url" maxlength="2000" placeholder="https://…"><a id="job-link" target="_blank" rel="noopener noreferrer" hidden>Open job ad ↗</a></label>
+            <label class="full-width">Notes <textarea name="notes" maxlength="5000" rows="3" placeholder="Contact, interview details or next steps"></textarea></label>
+          </div>
+        </details>
+        <p class="form-error" id="form-error" role="alert" hidden></p>
+      </div>
+      <footer class="dialog-footer">
+        <button class="danger" type="button" id="delete">Delete</button>
+        <div><button class="button" type="button" id="cancel">Cancel</button><button class="button primary" type="submit" id="save">Save application</button></div>
+      </footer>
+    </form>
+  </dialog>
+
+  <dialog id="confirm" aria-labelledby="confirm-title">
+    <form method="dialog">
+      <header class="dialog-header"><div><h2 id="confirm-title">Delete this application?</h2><p id="confirm-copy"></p></div></header>
+      <footer class="dialog-footer"><div><button class="button" value="cancel" autofocus>Cancel</button><button class="button destructive" value="delete">Delete application</button></div></footer>
+    </form>
+  </dialog>
+
+  <p id="toast" class="toast" role="status" hidden></p>
+</body>
+</html>
